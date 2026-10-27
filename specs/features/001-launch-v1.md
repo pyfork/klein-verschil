@@ -4,9 +4,9 @@
 
 ## Goal
 
-Get to the day landlords can pay, because that's when the 60-day test starts. To pass, 30 landlords pay within 60 days.
+Reach the first paying landlord as early as possible. Build only what a landlord and a renter need to list, find, contact and pay. Everything else waits until payments are live.
 
-Build only what a landlord and a renter need for that. Everything else waits.
+"Dev spec" below means the media and location developer spec that came with the design mocks.
 
 ## In scope
 
@@ -20,6 +20,22 @@ Build only what a landlord and a renter need for that. Everything else waits.
 - Owner intro video: optional, but nudged hard. The listing card shows "Video" or "No video".
 - Owner intro video length: up to 3 minutes. The editor suggests 60 to 90 seconds. This replaces the 90-second limit in dev spec B7 and B9.
 - Exact or approximate location (dev spec C2).
+- Google Maps link: optional (see "Google Maps link on map cards" below).
+
+#### Google Maps link on map cards
+
+Our maps are drawn with MapLibre (spec 003). Clicking a home's map card, or its photo, opens that home in Google Maps. People already know Google Maps and can start navigating from there.
+
+- **Landlord input (optional):** in the Location step, the landlord pastes a Google Maps share link or the embed code. We accept only Google Maps addresses (`google.com/maps`, `maps.google.com`, `maps.app.goo.gl`, `goo.gl/maps`). From embed code we keep only the link inside it. Anything else is rejected with "Paste a link from Google Maps".
+- **Check it matches the pin:** the server opens the link, reads its location, and compares it with the confirmed pin. If they're more than 200 m apart, the landlord sees "This Google Maps link points somewhere else. Check it or remove it." This is a warning only. It never blocks publishing (dev spec A3).
+- **No link pasted:** we build one automatically from the confirmed pin, using Google's public Maps link format (`https://www.google.com/maps/search/?api=1&query={lat},{lng}`). This needs no Google account or key, so every exact-location home gets the feature.
+- **Approximate location (privacy):** no Google Maps link is shown publicly, because it would give away the exact spot. The card shows "Exact location shared after you enquire". The landlord can share the link in their reply.
+- **Where a card click goes:**
+  - **Map on a home's own page:** clicking the map card or its photo opens Google Maps.
+  - **Search results map (many homes):** clicking the card or its photo opens our listing page. The card also has a small "Open in Google Maps" button with the map-pin icon (Heroicons), so navigation is one tap away. Renters see the photos, video and price before they leave the site.
+  - The button has a 44 px tap area and the visible text "Open in Google Maps", never an icon alone.
+- **The link:** opens in a new tab, and on phones it opens the Google Maps app. Marked `rel="nofollow noopener"`. It's an outside link, not a page we want Google to rank.
+- We never embed Google's own map on our pages. That keeps pages fast and avoids Google's billing.
 - Autosave. No Save button.
 - "Preview as renter" before publishing.
 
@@ -33,26 +49,28 @@ Build only what a landlord and a renter need for that. Everything else waits.
 
 ### 3. Landlord pays
 
-| Plan | Price | Includes |
-|---|---|---|
-| Free | RM0 | 1 live listing |
-| Up to 3 | RM299 a year | 3 live listings, each with a tenancy record |
-| More than 3 | RM599 a year | More than 3 live listings, each with a tenancy record |
-| Tenancy record | RM99 a year per home | For the free plan's home |
+| Plan | Includes |
+|---|---|
+| Free | 1 live listing |
+| Small (yearly) | Up to 3 live listings, each with a tenancy record |
+| Large (yearly) | More than 3 live listings, each with a tenancy record |
+| Tenancy record add-on (yearly, per home) | A tenancy record for the free plan's home |
+
+- Plan names, prices and listing limits come from settings in the database, never from code. That way prices can change without a release.
 
 - Payment method at launch: **Pay with QR (DuitNow QR) only**, confirmed by hand by the admin. FPX and card through a gateway come later (see Out of scope).
 - **Pay with QR:**
   - The pay screen shows a DuitNow QR. The landlord scans it with any Malaysian banking or e-wallet app.
   - On a phone, the QR is shown with a "Save QR" button and the steps "open your bank app, scan from gallery", since people can't scan their own screen.
-  - Source image (private, not in the repo): `docs/spike puascari property/uploads/duitnow-qr.jpg`. It's a static merchant QR for "KIP ADVISORS".
+  - The QR image is a static merchant QR, uploaded by the admin and kept in settings (not in the repo).
   - A static QR doesn't tell us who paid or how much. So after paying, the landlord types the bank reference number and can attach a screenshot of the receipt. The plan shows "Payment being checked". The admin sees a "QR payments to confirm" list, checks the bank statement, and taps Confirm. The plan then activates and the receipt goes out.
   - Promise shown to the landlord: confirmed within 1 working day.
-  - Trust line on the pay screen, above the QR: "Payments go to Kip Advisors, the company behind Sewa Rumah by Puascari." Kip Advisors is the business entity, Sewa Rumah is the service, and Puascari is the brand.
-- Receipts, terms and the privacy policy name **Kip Advisors** as the seller. Everything else in the app says **Sewa Rumah by Puascari**.
+  - Trust line on the pay screen, above the QR: "Payments go to {legal entity}, the company behind Sewa Rumah by Puascari." The QR shows the legal entity's name in the payer's bank app, so the line stops that name from looking unfamiliar.
+- Receipts, terms and the privacy policy name the **legal entity** (from settings) as the seller. Everything else in the app says **Sewa Rumah by Puascari**.
 - Receipt by email and in the app.
 - Yearly plans don't renew automatically in v1. A reminder goes out 14 days before the end. This avoids surprise charges and refund disputes.
 - Trying to publish a 2nd home on the free plan opens the upgrade screen. Nothing is lost while the landlord decides.
-- The admin sees a count of paying landlords against the target of 30, and the days left.
+- The admin sees a count of paying landlords.
 
 ### 4. Tenancy record
 
@@ -90,12 +108,12 @@ Everything in `specs/features/002-seo.md`, sections 1 to 13 (13 is AEO and GEO).
 
 - Listings directory, duplicate check and override (as in the mocks).
 - Remove a listing and block a user.
-- Paying-landlord count and the 60-day countdown.
+- Paying-landlord count.
 - "QR payments to confirm" list: landlord, plan, amount, reference, receipt screenshot, and Confirm or Reject (Reject asks for a reason, which is sent to the landlord).
 
 ## Out of scope for v1
 
-- Boost (RM100)
+- Boost (paid extra views for a listing)
 - Rent reminders and rent tracking for the tenant
 - Malay language (parked). The `/ms/` URL prefix is reserved for it.
 - Chinese language
@@ -108,15 +126,17 @@ Everything in `specs/features/002-seo.md`, sections 1 to 13 (13 is AEO and GEO).
 
 - A landlord can sign up, list a home with video, and publish it in under 15 minutes on a phone.
 - A renter can find that home on Google (once it's indexed), view it and send an enquiry.
-- A landlord can pay RM299, RM599 or RM99 by DuitNow QR and enter the reference. Once the admin confirms the payment, the plan activates and the admin count goes up by 1.
+- A landlord can pay for any plan or the add-on by DuitNow QR and enter the reference. Once the admin confirms the payment, the plan activates and the admin count goes up by 1.
 - A landlord and tenant can both open the same tenancy record and download the agreement.
 - Every item on the SEO launch checklist (`specs/features/002-seo.md` section 12) passes.
 - Every screen works at 320 px wide, with no sideways scrolling (responsiveness table in the mocks).
 
-## Open questions (one at a time, in this order)
+## Decisions
 
-1. ~~Owner intro video length~~ **Decided 2026-10-27:** up to 3 minutes, with 60 to 90 seconds suggested.
-2. ~~Payment provider~~ **Decided 2026-10-27:** DuitNow QR only at launch, confirmed by hand. A gateway comes later.
-3. ~~Tenant sign-in~~ **Decided 2026-10-27:** email one-time code for everyone. No SMS (it's complex to integrate and costs money per message).
-4. ~~Website address~~ **Decided 2026-10-27:** `property.puascari.com`, with `puascari.com/sewarumah` sending people there through a permanent (301) redirect.
-5. ~~First language~~ **Decided 2026-10-27:** English first. The Malay build is parked.
+| Decision | Technical reason |
+|---|---|
+| Owner intro video up to 3 minutes, 60 to 90 seconds suggested | Long enough to show a home. The suggestion keeps most videos short, so they're watched to the end and process quickly. |
+| DuitNow QR only at launch, confirmed by the admin | No payment gateway to integrate before launch. Works with every Malaysian banking and e-wallet app. A gateway can be added later without changing plans. |
+| Email one-time code for everyone, no SMS | One sign-in method to build and secure. No per-message cost and no SMS provider to integrate. |
+| `property.puascari.com`, with `puascari.com/sewarumah` redirecting there (301) | One indexable host. The short link keeps any ranking it earns. |
+| English first, Malay later under `/ms/` | One language to build and test first. A translation layer from day one keeps Malay cheap to add. |
